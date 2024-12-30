@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory, render_template, request
+from flask import Flask, send_from_directory, render_template, request, redirect, flash, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
@@ -15,11 +15,33 @@ logging.basicConfig(
 
 app = Flask(__name__)
 
+# Limit filesize to 10 MB
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1000 * 1000  # 10 MB in bytes, you only need to change the 10 to whatever size limit you'd like
+
+app.secret_key = "your_secret_key" # I will need this to render messages, ex "file too large"
+
 # The folder to be shared
 SHARED_FOLDER = "./shared"
 
 # Using this to set limits
 limiter = Limiter(get_remote_address, app=app, default_limits=["100 per minute"])
+
+
+# The following function will help when users upload files with the same name as existing files on the server
+# It checks for file names, if the file exists, we will use a counter to add a number to the newly uploaded file
+def secure_unique_filename(filename):
+    """
+    Ensures that the filename is unique by appending a counter if needed.
+    """
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    unique_filename = filename
+
+    while os.path.exists(os.path.join(SHARED_FOLDER, unique_filename)):
+        unique_filename = f"{base}{counter}{ext}"
+        counter += 1
+
+    return unique_filename
 
 
 # The default landing page
@@ -82,9 +104,43 @@ def upload_file():
             <input type="submit" value="Upload">
         </form>
         '''
+    
     except Exception as e:
         logging.error(f"Error uploading file: {file.filename} by {client_ip}. Error: {e}")
         return "An error occurred while uploading the file.", 500
+
+
+
+@app.route("/upload2", methods=["GET", "POST"])
+def upload_with_filesize_limit():
+    if request.method == "POST":
+        file = request.files["file"]
+        if file:
+            # Generate a unique filename if necessary
+            unique_filename = secure_unique_filename(file.filename)
+
+            # Save the file
+            file.save(os.path.join(SHARED_FOLDER, unique_filename))
+            flash(f"File uploaded successfully as {unique_filename}")
+            # file.save(os.path.join(SHARED_FOLDER, file.filename)) # Old code
+
+            # Log information about the upload
+            client_ip = request.remote_addr
+            logging.info(f"File uploaded: {unique_filename} by {client_ip}. File uploaded successfully")
+
+            return "File uploaded successfully!"
+    return render_template("upload2.html")
+
+
+
+@app.errorhandler(413)
+def file_too_large(error):
+    flash("File is too large. Maximum file size is 10 MB.")
+    # Log information about the upload
+    client_ip = request.remote_addr
+    logging.info(f"{client_ip} tryed to upload a file too large. Maxium file size is 10 MB.")
+    return redirect(url_for("upload_with_filesize_limit"))
+
 
 
 # This is for the logs
@@ -111,9 +167,9 @@ def view_test():
 
     for file in files:
         file_path = os.path.join(SHARED_FOLDER, file)
-        if os.path.isfile(file_path):  # Kontrollera att det är en fil
+        if os.path.isfile(file_path):  # Control that this is a file
             size = os.path.getsize(file_path)
-            size_in_mb = round(size / 1000 / 1000, 4)
+            size_in_mb = round(size / 1000 / 1000, 4) # Convert to MB and round to 4 digits
             filesArr.append({"name": file, "size": size, "size_in_mb": size_in_mb})
 
     return render_template("test.html", files=filesArr)

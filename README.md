@@ -27,6 +27,8 @@ The endpoints are:
 `localhost:8000/upload` - this will allow you to upload files to the server
 `localhost:8000/logs` - you will be able to see all kind of logs, who downloaded which file and who uploaded which file and other detailed logs.
 The logs are saved in a file called `file_server.log` in the root directory.
+`localhost:8000/test` - this is a view that shows you the list of the files on the server along with their size in bytes and in MB
+`localhost:8000/upload2` - working with this file to add a file size limit, that you can adjust by yourself. Also it is now possible to upload files with the same names as existing files on the server. The uploaded files will be added a number at the end of the file name.
 
 
 ## Features
