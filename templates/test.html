@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File List</title>
+</head>
+<body>
+    <h1>Files</h1>
+    <table border="1">
+        <tr>
+            <th>Filename</th>
+            <th>Size (bytes)</th>
+            <th>Size (MB)</th>
+        </tr>
+        {% for file in files %}
+        <tr>
+            <td>{{ file.name }}</td>
+            <td>{{ file.size }}</td>
+            <td>{{ file.size_in_mb }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

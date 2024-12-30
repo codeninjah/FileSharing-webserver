@@ -104,6 +104,21 @@ def view_logs():
         return f"Could not read log file: {e}", 500
 
 
+@app.route("/test")
+def view_test():
+    filesArr = []
+    files = os.listdir(SHARED_FOLDER)
+
+    for file in files:
+        file_path = os.path.join(SHARED_FOLDER, file)
+        if os.path.isfile(file_path):  # Kontrollera att det är en fil
+            size = os.path.getsize(file_path)
+            size_in_mb = round(size / 1000 / 1000, 4)
+            filesArr.append({"name": file, "size": size, "size_in_mb": size_in_mb})
+
+    return render_template("test.html", files=filesArr)
+
+
 if __name__ == "__main__":
     # Make sure the SHARED_FOLDER exists
     # if not
